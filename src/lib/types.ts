@@ -1,12 +1,15 @@
 import { Prisma } from "@/generated/prisma";
 
+export const userDataSelect = {
+  username: true,
+  displayName: true,
+  avatarUrl: true,
+  id: true,
+} satisfies Prisma.UserSelect;
+
 export const PostDataInclude = {
   user: {
-    select: {
-      username: true,
-      avatarUrl: true,
-      displayName: true,
-    },
+    select: userDataSelect,
   },
 } satisfies Prisma.PostInclude;
 
