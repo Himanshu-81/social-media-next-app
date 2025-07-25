@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import LoadingButton from "@/components/LoadingButton";
+import { PasswordInput } from "@/components/PasswordInput";
 
 export default function LoginForm() {
   const [error, setError] = useState<string>();
@@ -65,7 +66,7 @@ export default function LoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input placeholder="Password" {...field} />
+                <PasswordInput placeholder="Password" {...field} />
               </FormControl>
 
               <FormMessage />

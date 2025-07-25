@@ -7,12 +7,12 @@ export const userDataSelect = {
   id: true,
 } satisfies Prisma.UserSelect;
 
-export const PostDataInclude = {
+export const postDataInclude = {
   user: {
     select: userDataSelect,
   },
 } satisfies Prisma.PostInclude;
 
 export type PostData = Prisma.PostGetPayload<{
-  include: typeof PostDataInclude;
+  include: typeof postDataInclude;
 }>;
