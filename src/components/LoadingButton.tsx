@@ -3,7 +3,8 @@ import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
-interface LoadingButtonProps {
+type ShadcnButtonProps = React.ComponentProps<typeof Button>;
+interface LoadingButtonProps extends ShadcnButtonProps {
   loading?: boolean;
   disabled?: boolean;
   children?: React.ReactNode;
