@@ -11,6 +11,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, InputProps>(
       <div className="relative">
         <Input
           type={showPassword ? "text" : "password"}
+          autoComplete="off"
           className={cn("pe-10", className)}
           ref={ref}
           {...props}
