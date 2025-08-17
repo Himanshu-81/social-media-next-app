@@ -1,14 +1,14 @@
 import { validateRequest } from "@/auth";
 import prisma from "@/lib/prisma";
 import { getUserDataSelect } from "@/lib/types";
+import { formatNumber } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
+import { unstable_cache } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
-import UserAvatar from "./UserAvatar";
-import { Button } from "./ui/button";
-import { unstable_cache } from "next/cache";
-import { formatNumber } from "@/lib/utils";
 import FollowButton from "./FollowButton";
+import UserAvatar from "./UserAvatar";
+import UserTooltip from "./UserTooltip";
 
 export default function TrendsSidebar() {
   return (
@@ -46,20 +46,22 @@ async function WhoToFollow() {
       <div className="text-xl font-bold">Who to follow</div>
       {usersToFollow.map((user) => (
         <div key={user.id} className="flex items-center justify-between gap-3">
-          <Link
-            href={`/users/${user.username}`}
-            className="flex items-center gap-3"
-          >
-            <UserAvatar avatarUrl={user.avatarUrl} className="flex-none" />
-            <div>
-              <p className="line-clamp-1 break-all font-semibold hover:underline">
-                {user.displayName}
-              </p>
-              <p className="line-clamp-1 break-all text-muted-foreground">
-                @{user.username}
-              </p>
-            </div>
-          </Link>
+          <UserTooltip user={user}>
+            <Link
+              href={`/users/${user.username}`}
+              className="flex items-center gap-3"
+            >
+              <UserAvatar avatarUrl={user.avatarUrl} className="flex-none" />
+              <div>
+                <p className="line-clamp-1 break-all font-semibold hover:underline">
+                  {user.displayName}
+                </p>
+                <p className="line-clamp-1 break-all text-muted-foreground">
+                  @{user.username}
+                </p>
+              </div>
+            </Link>
+          </UserTooltip>
           <FollowButton
             userId={user.id}
             initialState={{
@@ -100,7 +102,7 @@ async function TrendingTopics() {
   const topics = await getTrendingTopics();
 
   return (
-    <div className="space-y-5 rounded-2xl bg-card shadow-md p-5">
+    <div className="space-y-5 rounded-2xl bg-card shadow-sm p-5">
       <div className="text-xl font-bold">Trending topics</div>
       {topics.map(({ hashtag, count }) => {
         const title = hashtag.split("#")[1];
