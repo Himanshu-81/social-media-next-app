@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Bugbook",
-    default: "Welcome to Bugbook",
+    template: "%s | Instantgram",
+    default: "Welcome to Instantgram",
   },
   description: "The social media platform for chatters",
 };

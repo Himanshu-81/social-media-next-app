@@ -2,23 +2,20 @@ import { useUploadThing } from "@/lib/uploadThing";
 import { UpdateUserProfileValues } from "@/lib/validation";
 import {
   InfiniteData,
-  QueryFilters,
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { updateUserProfile } from "./actions";
 import { PostsPage } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 export function useUpdateProfileMutation() {
+  const queryClient = useQueryClient();
+  const { startUpload } = useUploadThing("avatar");
   const router = useRouter();
 
-  const queryClient = useQueryClient();
-
-  const { startUpload: startAvatarUpload } = useUploadThing("avatar");
-
-  const mutation = useMutation({
+  return useMutation({
     mutationFn: async ({
       values,
       avatar,
@@ -28,54 +25,53 @@ export function useUpdateProfileMutation() {
     }) => {
       return Promise.all([
         updateUserProfile(values),
-        avatar && startAvatarUpload([avatar]),
+        avatar ? startUpload([avatar]) : null,
       ]);
     },
+
     onSuccess: async ([updatedUser, uploadResult]) => {
       const newAvatarUrl = uploadResult?.[0].serverData.avatarUrl;
+      const finalUser = {
+        ...updatedUser,
+        avatarUrl: newAvatarUrl || updatedUser.avatarUrl,
+      };
 
-      const queryFilter: QueryFilters = { queryKey: ["post-feed"] };
-
-      await queryClient.cancelQueries(queryFilter);
-
-      queryClient.setQueriesData<InfiniteData<PostsPage, string | null>>(
-        queryFilter,
-        (oldData) => {
-          if (!oldData) return;
-
-          return {
-            pageParams: oldData.pageParams,
-            pages: oldData.pages.map((page) => ({
-              nextCursor: page.nextCursor,
-              posts: page.posts.map((post) => {
-                if (post.user.id === updatedUser.id) {
-                  return {
-                    ...post,
-                    user: {
-                      ...updatedUser,
-                      avatar: newAvatarUrl || updatedUser.avatarUrl,
-                    },
-                  };
-                }
-                return post;
-              }),
-            })),
-          };
-        }
+      queryClient.setQueryData(
+        ["user"],
+        (old: InfiniteData<PostsPage, string | null> | undefined) => ({
+          ...old,
+          ...finalUser,
+        })
       );
 
-      router.refresh();
+      queryClient.setQueriesData<InfiniteData<PostsPage>>(
+        { queryKey: ["post-feed"] },
+        (old) =>
+          old && {
+            ...old,
+            pages: old.pages.map((p) => ({
+              ...p,
+              posts: p.posts.map((post) =>
+                post.user.id === finalUser.id
+                  ? { ...post, user: { ...post.user, ...finalUser } }
+                  : post
+              ),
+            })),
+          }
+      );
 
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["user"] }),
+        queryClient.refetchQueries({ queryKey: ["post-feed"] }),
+      ]);
+
+      router.refresh();
       toast.success("Profile updated successfully");
     },
 
     onError: (error) => {
       console.error(error);
-      toast.error("Failed to update profile. Please try again later.", {
-        duration: 3000,
-      });
+      toast.error("Failed to update profile. Please try again later.");
     },
   });
-
-  return mutation;
 }
