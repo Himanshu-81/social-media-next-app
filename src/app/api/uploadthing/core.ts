@@ -1,7 +1,7 @@
 import { validateRequest } from "@/auth";
 import prisma from "@/lib/prisma";
 import { createUploadthing, type FileRouter } from "uploadthing/next";
-import { UploadThingError } from "uploadthing/server";
+import { UploadThingError, UTApi } from "uploadthing/server";
 
 const f = createUploadthing();
 
@@ -19,14 +19,20 @@ export const uploadThingFileRouter = {
       if (!user) throw new UploadThingError("Unauthorized");
 
       // return only serializable data
-      return { userId: user.id };
+      return { user: user };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      // ✅ UploadThing now gives you `file.ufsUrl` (use this instead of hacking the URL)
+      const oldAvatarUrl = metadata.user.avatarUrl;
+
+      if (oldAvatarUrl) {
+        const key = oldAvatarUrl.split("/").pop();
+        if (key) await new UTApi().deleteFiles(key);
+      }
+
       const newAvatarUrl = file.ufsUrl;
 
       await prisma.user.update({
-        where: { id: metadata.userId },
+        where: { id: metadata.user.id },
         data: { avatarUrl: newAvatarUrl },
       });
 
