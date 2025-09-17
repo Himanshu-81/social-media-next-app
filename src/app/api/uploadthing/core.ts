@@ -8,8 +8,7 @@ const f = createUploadthing();
 export const uploadThingFileRouter = {
   avatar: f({
     image: {
-      maxFileSize: "512KB", // ✅ latest config style
-      maxFileCount: 1,
+      maxFileSize: "512KB",
     },
   })
     .middleware(async () => {
@@ -37,6 +36,34 @@ export const uploadThingFileRouter = {
       });
 
       return { avatarUrl: newAvatarUrl };
+    }),
+  attachment: f({
+    image: {
+      maxFileSize: "4MB",
+      maxFileCount: 5,
+    },
+    video: {
+      maxFileSize: "64MB",
+      maxFileCount: 5,
+    },
+  })
+    .middleware(async () => {
+      // Run auth check
+      const { user } = await validateRequest();
+
+      if (!user) throw new UploadThingError("Unauthorized");
+
+      return {};
+    })
+    .onUploadComplete(async ({ file }) => {
+      const media = await prisma.media.create({
+        data: {
+          url: file.ufsUrl,
+          type: file.type.startsWith("image") ? "IMAGE" : "VIDEO",
+        },
+      });
+
+      return { mediaId: media.id };
     }),
 } satisfies FileRouter;
 
