@@ -4,13 +4,12 @@ import { getUserDataSelect } from "@/lib/types";
 
 export async function GET(
   req: Request,
-  {
-    params: { username },
-  }: {
-    params: { username: string };
-  }
+  context: { params: Promise<{ username: string }> }
 ) {
   try {
+    // Await params here
+    const { username } = await context.params;
+
     const { user: loggedInUser } = await validateRequest();
 
     if (!loggedInUser) {
@@ -34,7 +33,6 @@ export async function GET(
     return Response.json(user);
   } catch (error) {
     console.error(error);
-
     return Response.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
