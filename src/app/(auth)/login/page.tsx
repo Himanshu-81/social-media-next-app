@@ -3,6 +3,7 @@ import LoginForm from "./LoginForm";
 import Link from "next/link";
 import loginImage from "@/assets/login-image.jpg";
 import Image from "next/image";
+import GoogleSignInButton from "./GoogleSignInButton";
 
 export const metadata: Metadata = {
   title: "Login",
@@ -17,6 +18,12 @@ export default function Page() {
             Login to Instantgram
           </h1>
           <div className="space-y-5">
+            <GoogleSignInButton />
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-muted"></div>
+              <span>or</span>
+              <div className="h-px flex-1 bg-muted"></div>
+            </div>
             <LoginForm />
             <Link
               href={"/signup"}
