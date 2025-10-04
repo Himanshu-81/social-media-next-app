@@ -29,7 +29,7 @@ export async function generateMetadata({
 }: {
   params: { postId: string };
 }) {
-  const { postId } = params; // ✅ fixed (removed await)
+  const { postId } = params;
   const { user } = await validateRequest();
 
   if (!user) return {};
@@ -42,7 +42,7 @@ export async function generateMetadata({
 }
 
 export default async function Page({ params }: { params: { postId: string } }) {
-  const { postId } = params; // ✅ fixed (removed await)
+  const { postId } = params;
   const { user } = await validateRequest();
 
   if (!user)
