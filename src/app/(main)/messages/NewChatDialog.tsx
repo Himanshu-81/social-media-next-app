@@ -32,15 +32,13 @@ export default function NewChatDialog({
   const [searchInput, setSearchInput] = useState("");
   const searchInputDebounced = useDebounce(searchInput);
 
-  const [selectedUsers, setSelectedUsers] = useState<UserResponse[]>([]); //check further
+  const [selectedUsers, setSelectedUsers] = useState<UserResponse[]>([]);
 
   const { data, isFetching, isError, isSuccess } = useQuery({
     queryKey: ["stream-users", searchInputDebounced],
-    queryFn: async () =>
-      await client.queryUsers(
+    queryFn: async () => {
+      const response = await client.queryUsers(
         {
-          id: { $ne: loggedInUser?.id },
-          role: { $ne: "admin" },
           ...(searchInputDebounced
             ? {
                 $or: [
@@ -52,20 +50,28 @@ export default function NewChatDialog({
         },
         { name: 1, username: 1 },
         { limit: 15 }
-      ),
+      );
+
+      const filteredUsers = response.users.filter(
+        (user) => user.id !== loggedInUser?.id && user.role !== "admin"
+      );
+
+      return { ...response, users: filteredUsers };
+    },
   });
 
   const mutation = useMutation({
     mutationFn: async () => {
       const channel = client.channel("messaging", {
         members: [loggedInUser.id, ...selectedUsers.map((u) => u.id)],
-        name:
-          selectedUsers.length > 1
-            ? loggedInUser.displayName +
-              ", " +
-              selectedUsers.map((u) => u.name).join(", ")
-            : undefined,
       });
+
+      if (selectedUsers.length > 1) {
+        const channelName =
+          loggedInUser.displayName +
+          ", " +
+          selectedUsers.map((u) => u.name).join(", ");
+      }
 
       await channel.create();
       return channel;

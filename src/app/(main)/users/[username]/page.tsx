@@ -15,45 +15,32 @@ import EditProfileButton from "./EditProfileButton";
 import UserPosts from "./UserPosts";
 
 interface PageProps {
-  params: {
-    username: string;
-  };
+  params: Promise<{ username: string }>;
 }
 
 const getUser = cache(async (username: string, loggedInUserId: string) => {
   const user = await prisma.user.findFirst({
-    where: {
-      username: {
-        equals: username,
-        mode: "insensitive",
-      },
-    },
+    where: { username: { equals: username, mode: "insensitive" } },
     select: getUserDataSelect(loggedInUserId),
   });
 
   if (!user) notFound();
-
   return user;
 });
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { username } = params; // ✅ no await
-
+  const { username } = await params;
   const { user: loggedInUser } = await validateRequest();
   if (!loggedInUser) return {};
 
   const user = await getUser(username, loggedInUser.id);
-
-  return {
-    title: `${user.displayName} @${user.username}`,
-  };
+  return { title: `${user.displayName} @${user.username}` };
 }
 
 export default async function Page({ params }: PageProps) {
-  const { username } = params; // ✅ no await
-
+  const { username } = await params;
   const { user: loggedInUser } = await validateRequest();
 
   if (!loggedInUser)
@@ -90,7 +77,7 @@ async function UserProfile({ user, loggedInUserId }: UserProfileProps) {
   const followerInfo: FollowerInfo = {
     followers: user._count.followers,
     isFollowedByUser: user.followers.some(
-      ({ followerId }) => followerId === loggedInUserId
+      (f) => f.followerId === loggedInUserId
     ),
   };
 

@@ -2,85 +2,70 @@ import { validateRequest } from "@/auth";
 import prisma from "@/lib/prisma";
 import { LikeInfo } from "@/lib/types";
 
-export async function GET(
-  req: Request,
-  { params: { postId } }: { params: { postId: string } }
-) {
+interface RouteParams {
+  params: Promise<{ postId: string }>; // ✅ must be a Promise
+}
+
+export async function GET(req: Request, { params }: RouteParams) {
+  const { postId } = await params; // ✅ await params
+
   try {
     const { user: loggedInUser } = await validateRequest();
-    if (!loggedInUser) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!loggedInUser)
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+      });
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
       select: {
-        likes: {
-          where: {
-            userId: loggedInUser.id,
-          },
-          select: {
-            userId: true,
-          },
-        },
-        _count: {
-          select: {
-            likes: true,
-          },
-        },
+        likes: { where: { userId: loggedInUser.id }, select: { userId: true } },
+        _count: { select: { likes: true } },
       },
     });
 
-    if (!post) {
-      return Response.json({ error: "Post not found" }, { status: 404 });
-    }
+    if (!post)
+      return new Response(JSON.stringify({ error: "Post not found" }), {
+        status: 404,
+      });
 
     const data: LikeInfo = {
       likes: post._count.likes,
       isLikedByUser: !!post.likes.length,
     };
-
-    return Response.json(data);
+    return new Response(JSON.stringify(data));
   } catch (error) {
     console.error(error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+    });
   }
 }
 
-export async function POST(
-  req: Request,
-  { params: { postId } }: { params: { postId: string } }
-) {
+export async function POST(req: Request, { params }: RouteParams) {
+  const { postId } = await params;
+
   try {
     const { user: loggedInUser } = await validateRequest();
-
-    if (!loggedInUser) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!loggedInUser)
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+      });
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: {
-        userId: true,
-      },
+      select: { userId: true },
     });
 
-    if (!post) {
-      return Response.json({ error: "Post not found" }, { status: 404 });
-    }
+    if (!post)
+      return new Response(JSON.stringify({ error: "Post not found" }), {
+        status: 404,
+      });
 
     await prisma.$transaction([
       prisma.like.upsert({
-        where: {
-          userId_postId: {
-            userId: loggedInUser.id,
-            postId,
-          },
-        },
-        create: {
-          userId: loggedInUser.id,
-          postId,
-        },
+        where: { userId_postId: { userId: loggedInUser.id, postId } },
+        create: { userId: loggedInUser.id, postId },
         update: {},
       }),
       ...(loggedInUser.id !== post.userId
@@ -89,7 +74,7 @@ export async function POST(
               data: {
                 issuerId: loggedInUser.id,
                 recipientId: post.userId,
-                postId: postId,
+                postId,
                 type: "LIKE",
               },
             }),
@@ -100,39 +85,34 @@ export async function POST(
     return new Response();
   } catch (error) {
     console.error(error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+    });
   }
 }
 
-export async function DELETE(
-  req: Request,
-  { params: { postId } }: { params: { postId: string } }
-) {
+export async function DELETE(req: Request, { params }: RouteParams) {
+  const { postId } = await params;
+
   try {
     const { user: loggedInUser } = await validateRequest();
-
-    if (!loggedInUser) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!loggedInUser)
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+      });
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: {
-        userId: true,
-      },
+      select: { userId: true },
     });
 
-    if (!post) {
-      return Response.json({ error: "Post not found" }, { status: 404 });
-    }
+    if (!post)
+      return new Response(JSON.stringify({ error: "Post not found" }), {
+        status: 404,
+      });
 
     await prisma.$transaction([
-      prisma.like.deleteMany({
-        where: {
-          userId: loggedInUser.id,
-          postId,
-        },
-      }),
+      prisma.like.deleteMany({ where: { userId: loggedInUser.id, postId } }),
       prisma.notification.deleteMany({
         where: {
           issuerId: loggedInUser.id,
@@ -146,6 +126,8 @@ export async function DELETE(
     return new Response();
   } catch (error) {
     console.error(error);
-    return Response.json({ error: "Internal server error" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
+      status: 500,
+    });
   }
 }

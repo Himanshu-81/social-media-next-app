@@ -13,36 +13,21 @@ import { cache, Suspense } from "react";
 
 const getPost = cache(async (postId: string, loggedInUserId: string) => {
   const post = await prisma.post.findUnique({
-    where: {
-      id: postId,
-    },
+    where: { id: postId },
     include: getPostDataSelect(loggedInUserId),
   });
 
   if (!post) notFound();
-
   return post;
 });
 
-export async function generateMetadata({
+// ✅ PageProps uses Promise for params
+export default async function Page({
   params,
 }: {
-  params: { postId: string };
+  params: Promise<{ postId: string }>;
 }) {
-  const { postId } = params;
-  const { user } = await validateRequest();
-
-  if (!user) return {};
-
-  const post = await getPost(postId, user.id);
-
-  return {
-    title: `${post.user.displayName}: ${post.content.slice(0, 50)}...`,
-  };
-}
-
-export default async function Page({ params }: { params: { postId: string } }) {
-  const { postId } = params;
+  const { postId } = await params;
   const { user } = await validateRequest();
 
   if (!user)
@@ -68,13 +53,26 @@ export default async function Page({ params }: { params: { postId: string } }) {
   );
 }
 
+// ✅ Metadata generator
+export const generateMetadata = async ({
+  params,
+}: {
+  params: Promise<{ postId: string }>;
+}) => {
+  const { postId } = await params;
+  const { user } = await validateRequest();
+  if (!user) return {};
+  const post = await getPost(postId, user.id);
+  return { title: `${post.user.displayName}: ${post.content.slice(0, 50)}...` };
+};
+
+// Sidebar component
 interface UserInfoSidebarProps {
   user: UserData;
 }
 
 async function UserInfoSidebar({ user }: UserInfoSidebarProps) {
   const { user: loggedInUser } = await validateRequest();
-
   if (!loggedInUser) return null;
 
   return (
@@ -109,7 +107,7 @@ async function UserInfoSidebar({ user }: UserInfoSidebarProps) {
           initialState={{
             followers: user._count.followers,
             isFollowedByUser: user.followers.some(
-              ({ followerId }) => followerId === loggedInUser.id
+              (f) => f.followerId === loggedInUser.id
             ),
           }}
         />

@@ -2,20 +2,19 @@ import TrendsSidebar from "@/components/TrendsSidebar";
 import SearchResults from "./SearchResults";
 
 interface PageProps {
-  searchParams: {
-    q?: string;
-  };
+  searchParams: Promise<{ q?: string }>;
 }
 
-export function generateMetadata({ searchParams }: PageProps) {
-  const q = searchParams?.q || "";
+export async function generateMetadata({ searchParams }: PageProps) {
+  const { q } = await searchParams;
   return {
     title: q ? `Search result for "${q}"` : "Search",
   };
 }
 
-export default function Page({ searchParams }: PageProps) {
-  const q = searchParams?.q || "";
+// ✅ main page
+export default async function Page({ searchParams }: PageProps) {
+  const { q } = await searchParams;
 
   return (
     <main className="flex w-full min-w-0 gap-5">

@@ -3,20 +3,22 @@ import prisma from "@/lib/prisma";
 import { CommentsPage, getCommentDataSelect } from "@/lib/types";
 import { NextRequest } from "next/server";
 
-export async function GET(
-  req: NextRequest,
-  { params: { postId } }: { params: { postId: string } }
-) {
+interface RouteParams {
+  params: Promise<{ postId: string }>;
+}
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
+  const { postId } = await params;
+
   try {
     const cursor = req.nextUrl.searchParams.get("cursor") || undefined;
-
     const pageSize = 5;
 
     const { user } = await validateRequest();
-
-    if (!user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!user)
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+      });
 
     const comments = await prisma.comment.findMany({
       where: { postId },
@@ -33,10 +35,11 @@ export async function GET(
       previousCursor: prevCursor,
     };
 
-    return Response.json(data);
+    return new Response(JSON.stringify(data));
   } catch (error) {
     console.error(error);
-
-    return Response.json({ error: "Internal Server Error" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Internal Server Error" }), {
+      status: 500,
+    });
   }
 }
