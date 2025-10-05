@@ -1,5 +1,13 @@
-node_modules
-.next
-out
-dist
-src/generated
+# Next.js build output
+.next/
+out/
+
+# Node modules
+node_modules/
+
+# Prisma generated files
+prisma/generated/
+src/generated/
+
+# Optional: ignore build cache
+*.tsbuildinfo
